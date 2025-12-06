@@ -148,6 +148,10 @@ def get_wafilife_books(query):
                         # Filter out invalid items
                         if price <= 0 or not slug or not product_id:
                             continue
+                        
+                        # Filter out non-books (must have authors)
+                        if not authors:
+                            continue
 
                         books.append({
                             'title': title,
@@ -186,7 +190,10 @@ def get_batighor_books(query):
                     
                     # Author
                     author_el = item.find('a', class_='card_contributer_title')
-                    author = author_el.get_text(strip=True) if author_el else "Unknown Author"
+                    if not author_el:
+                        # Skip items without author (likely non-books like notebooks, stationery)
+                        continue
+                    author = author_el.get_text(strip=True)
                     
                     # Price
                     price_container = item.find('span', class_='text-primary')
@@ -203,24 +210,40 @@ def get_batighor_books(query):
                         
                     # Link
                     link = ""
+                    product_id = ""
                     if title_el:
                         a_tag = title_el.find('a')
                         if a_tag:
                             href = a_tag.get('href', '')
                             link = "https://baatighar.com" + href
                             
+                            # Extract ID from href (e.g. /shop/title-12345)
+                            match = re.search(r'-(\d+)$', href)
+                            if match:
+                                product_id = match.group(1)
+                            
                     # Image
                     image_url = ""
-                    img_container = item.find('div', class_='image-container')
-                    if img_container:
-                        img_tag = img_container.find('img')
-                        if img_tag:
-                            image_url = img_tag.get('src', '')
-                            # Check for data-src if src is base64 placeholder
-                            if image_url.startswith('data:image') and len(image_url) < 1000:
-                                ds = img_tag.get('data-src')
-                                if ds:
-                                    image_url = ds
+                    # Try to construct image URL from ID first (much lighter than base64)
+                    if product_id:
+                        image_url = f"https://baatighar.com/web/image/product.template/{product_id}/image_256"
+                    else:
+                        # Fallback to scraping
+                        img_container = item.find('div', class_='image-container')
+                        if img_container:
+                            img_tag = img_container.find('img')
+                            if img_tag:
+                                src = img_tag.get('src', '')
+                                # Avoid large base64 strings if possible
+                                if src.startswith('data:image') and len(src) > 1000:
+                                    # If we couldn't get ID, and image is huge base64, 
+                                    # we might skip it or use a placeholder to avoid 5MB payloads
+                                    # But for now, let's try to find data-src
+                                    ds = img_tag.get('data-src')
+                                    if ds:
+                                        image_url = ds
+                                else:
+                                    image_url = src
 
                     books.append({
                         'title': title,
