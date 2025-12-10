@@ -13,11 +13,16 @@ def get_rokomari_books(query):
     books = []
     try:
         url = f"https://www.rokomari.com/search?term={query}"
-        response = requests.get(url)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        print(f"Fetching Rokomari URL: {url}")
+        response = requests.get(url, headers=headers)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             
             items = soup.find_all('div', class_='book-text-area')
+            print(f"Rokomari found {len(items)} items")
             for item in items:
                 try:
                     # Title
@@ -58,10 +63,13 @@ def get_rokomari_books(query):
                             link = "https://www.rokomari.com" + href
                         else:
                             href = ""
-                            
+                    
+                    # print(f"Rokomari Item: {title}, Href: {href}")
+
                     # Filter out non-book items (e.g. stationery, electronics)
                     # Books usually have /book/ in the URL, others have /product/ or /electronics/
                     if '/book/' not in href:
+                        # print(f"Skipping non-book: {href}")
                         continue
                             
                     # Image
@@ -174,7 +182,10 @@ def get_batighor_books(query):
     books = []
     try:
         url = f"https://baatighar.com/shop?search={query}"
-        response = requests.get(url)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers)
         
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
