@@ -5,6 +5,8 @@ import requests
 from bs4 import BeautifulSoup
 import concurrent.futures
 import re
+import os
+from urllib.parse import quote
 
 # Affiliate configuration
 ROKOMARI_AFFILIATE_ID = "MY_AFFILIATE_ID" # Replace with actual ID
@@ -12,22 +14,34 @@ ROKOMARI_AFFILIATE_ID = "MY_AFFILIATE_ID" # Replace with actual ID
 def get_rokomari_books(query):
     books = []
     try:
-        url = f"https://www.rokomari.com/search?term={query}"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Referer': 'https://www.rokomari.com/',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'same-origin',
-            'Sec-Fetch-User': '?1',
-            'Cache-Control': 'max-age=0',
-        }
-        print(f"Fetching Rokomari URL: {url}")
-        response = requests.get(url, headers=headers)
+        target_url = f"https://www.rokomari.com/search?term={query}"
+        scraper_api_key = os.environ.get('SCRAPER_API_KEY')
+        
+        if scraper_api_key:
+            print(f"Fetching Rokomari via ScraperAPI: {target_url}")
+            payload = {
+                'api_key': scraper_api_key, 
+                'url': target_url,
+                'keep_headers': 'true' # Optional: pass our headers through
+            }
+            response = requests.get('http://api.scraperapi.com', params=payload)
+        else:
+            print(f"Fetching Rokomari Direct: {target_url}")
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://www.rokomari.com/',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'same-origin',
+                'Sec-Fetch-User': '?1',
+                'Cache-Control': 'max-age=0',
+            }
+            response = requests.get(target_url, headers=headers)
+
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             
