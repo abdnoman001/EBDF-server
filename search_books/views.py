@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 import requests
+import cloudscraper
 from bs4 import BeautifulSoup
 import concurrent.futures
 import re
@@ -26,21 +27,14 @@ def get_rokomari_books(query):
             }
             response = requests.get('http://api.scraperapi.com', params=payload)
         else:
-            print(f"Fetching Rokomari Direct: {target_url}")
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Referer': 'https://www.rokomari.com/',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1',
-                'Sec-Fetch-Dest': 'document',
-                'Sec-Fetch-Mode': 'navigate',
-                'Sec-Fetch-Site': 'same-origin',
-                'Sec-Fetch-User': '?1',
-                'Cache-Control': 'max-age=0',
-            }
-            response = requests.get(target_url, headers=headers)
+            print(f"Fetching Rokomari via Cloudscraper: {target_url}")
+            scraper = cloudscraper.create_scraper()
+            response = scraper.get(target_url)
+
+        if response.status_code != 200:
+            print(f"Rokomari failed with status: {response.status_code}")
+            print(f"Response URL: {response.url}")
+            # print(f"Response snippet: {response.text[:500]}")
 
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
